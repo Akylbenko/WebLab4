@@ -1,5 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 from .models import Article
 from .serializers import ArticleSerializer
 
@@ -7,55 +9,38 @@ from .serializers import ArticleSerializer
 class ArticleViewSet(viewsets.ModelViewSet):
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['category', 'is_published']
+    ordering_fields = ['created_at', 'title', 'author', 'updated_at']
+    ordering = ['-created_at']
 
-    def list(self, request):
-        articles = self.get_queryset()
-        serializer = self.get_serializer(articles, many=True)
-        return Response(serializer.data)
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
 
-    def retrieve(self, request, pk=None):
-        try:
-            article = Article.objects.get(pk=pk)
-            serializer = self.get_serializer(article)
-            return Response(serializer.data)
-        except Article.DoesNotExist:
-            return Response(
-                {"error": "Статья не найдена"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        # Дополнительная фильтрация по автору
+        author = self.request.query_params.get('author')
+        if author:
+            queryset = queryset.filter(author__icontains=author)
 
-    def create(self, request):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return queryset
 
-    def update(self, request, pk=None):
-        try:
-            article = Article.objects.get(pk=pk)
-        except Article.DoesNotExist:
-            return Response(
-                {"error": "Статья не найдена"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
-        serializer = self.get_serializer(article, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 
-    def destroy(self, request, pk=None):
-        try:
-            article = Article.objects.get(pk=pk)
-            article.delete()
-            return Response(
-                {"message": "Статья успешно удалена"},
-                status=status.HTTP_204_NO_CONTENT
-            )
-        except Article.DoesNotExist:
-            return Response(
-                {"error": "Статья не найдена"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
