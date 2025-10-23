@@ -7,7 +7,7 @@ class Article(models.Model):
         ('science', 'Наука'),
         ('sports', 'Спорт'),
         ('politics', 'Политика'),
-        ('entertainment', 'Развлечения'),
+        ('business', 'Развлечения'),
         ('other', 'Другое'),
     ]
 
@@ -33,5 +33,4 @@ class Article(models.Model):
         return self.title
 
     def get_category_display(self):
-        """Возвращает человеко-читаемое название категории"""
         return dict(self.CATEGORY_CHOICES).get(self.category, self.category)
